@@ -397,7 +397,7 @@
 	}
 
 	function getZone (name, caller) {
-		
+
 		name = normalizeName(name);
 
 		var zone = zones[name];
@@ -493,10 +493,10 @@
 			out  = moment.utc.apply(null, args);
 
 		if (zone && !moment.isMoment(input) && needsOffset(out)) {
-			out.add(zone.parse(out), 'minutes');
+			out = out.add(zone.parse(out), 'minutes');
 		}
 
-		out.tz(name);
+		out = out.tz(name);
 
 		return out;
 	}
@@ -537,7 +537,7 @@
 		if (mom._z === undefined) {
 			if (zone && needsOffset(mom) && !mom._isUTC) {
 				mom._d = moment.utc(mom._a)._d;
-				mom.utc().add(zone.parse(mom), 'minutes');
+				mom = mom.utc().add(zone.parse(mom), 'minutes');
 			}
 			mom._z = zone;
 		}
@@ -547,11 +547,12 @@
 				offset = offset / 60;
 			}
 			if (mom.utcOffset !== undefined) {
-				mom.utcOffset(-offset, keepTime);
+				mom = mom.utcOffset(-offset, keepTime);
 			} else {
-				mom.zone(offset, keepTime);
+				mom = mom.zone(offset, keepTime);
 			}
 		}
+		return mom
 	};
 
 	fn.tz = function (name, keepTime) {
@@ -559,13 +560,13 @@
 			if (typeof name !== 'string') {
 				throw new Error('Time zone name must be a string, got ' + name + ' [' + typeof name + ']');
 			}
-			this._z = getZone(name);
-			if (this._z) {
-				moment.updateOffset(this, keepTime);
+			var cloned = this.clone();
+			cloned._z = getZone(name);
+			if (cloned._z) {
+				return moment.updateOffset(cloned, keepTime);
 			} else {
 				logError("Moment Timezone has no data for " + name + ". See http://momentjs.com/timezone/docs/#/data-loading/.");
 			}
-			return this;
 		}
 		if (this._z) { return this._z.name; }
 	};
@@ -579,8 +580,9 @@
 
 	function resetZoneWrap (old) {
 		return function () {
-			this._z = null;
-			return old.apply(this, arguments);
+			var that = this.clone();
+		    that._z = null;
+			return old.apply(that, arguments);
 		};
 	}
 
